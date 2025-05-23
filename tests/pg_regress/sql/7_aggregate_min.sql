@@ -1,0 +1,17 @@
+BEGIN;
+CREATE EXTENSION conda;
+
+CREATE TABLE versions (
+    version condaversion
+);
+INSERT INTO versions(version) VALUES('10');
+INSERT INTO versions(version) VALUES('1');
+INSERT INTO versions(version) VALUES('3');
+INSERT INTO versions(version) VALUES('9');
+INSERT INTO versions(version) VALUES('5');
+INSERT INTO versions(version) VALUES('10');
+INSERT INTO versions(version) VALUES('6');
+
+SELECT min(version) FROM versions;
+
+ROLLBACK;

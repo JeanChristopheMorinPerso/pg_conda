@@ -1,0 +1,9 @@
+BEGIN;
+CREATE EXTENSION conda;
+SELECT NULL::condaversion;
+ condaversion 
+--------------
+ 
+(1 row)
+
+ROLLBACK;

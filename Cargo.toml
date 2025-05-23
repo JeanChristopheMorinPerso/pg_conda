@@ -1,0 +1,31 @@
+[package]
+name = "conda"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "pgrx_embed_conda"
+path = "./src/bin/pgrx_embed.rs"
+
+[features]
+default = ["pg17"]
+pg13 = ["pgrx/pg13" ]
+pg14 = ["pgrx/pg14" ]
+pg15 = ["pgrx/pg15" ]
+pg16 = ["pgrx/pg16" ]
+pg17 = ["pgrx/pg17" ]
+no-schema-generation = ["pgrx/no-schema-generation"]
+
+[dependencies]
+pgrx = "0.14.3"
+rattler_conda_types = "0.34.0"
+serde = "1.0.219"
+
+[profile.release]
+panic = "unwind"
+opt-level = 3
+lto = "fat"
+codegen-units = 1

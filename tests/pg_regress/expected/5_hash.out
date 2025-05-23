@@ -1,0 +1,17 @@
+-- Test the hash function
+BEGIN;
+CREATE EXTENSION conda;
+SELECT DISTINCT v FROM (VALUES 
+    ('1.1.0'::condaversion),
+    ('1.01.0'::condaversion),
+    ('2.0.4'::condaversion),
+    ('1.0.0'::condaversion)
+) v(v);
+   v   
+-------
+ 1.0.0
+ 2.0.4
+ 1.1.0
+(3 rows)
+
+ROLLBACK;
