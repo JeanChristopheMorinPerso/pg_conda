@@ -5,3 +5,4 @@
 **/*.rs.bk
 tests/pg_regress/results
 /versions.sql
+/dist

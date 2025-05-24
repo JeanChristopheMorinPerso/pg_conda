@@ -1,0 +1,84 @@
+name: Test
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: rockylinux/rockylinux:8
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          .cargo_home/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install PostgreSQL
+      run: |
+        set -e
+        # Install the repository RPM:
+        dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+        # Disable the built-in PostgreSQL module:
+        dnf -qy module disable postgresql
+
+        # Install development dependencies
+        dnf install -y bison readline-devel zlib-devel openssl-devel
+
+        # Needed for pelr-IPC-RUN
+        dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --set-enabled powertools
+
+        # Install PostgreSQL:
+        dnf install -y postgresql17-server postgresql17-devel
+
+    - name: Install dependencies
+      run: dnf install -y clang git curl xz tar sudo
+
+    - name: Install rust
+      run: |
+        set -e
+        _version='1.87.0'
+        echo "Downloading rust ${_version}"
+        curl -s https://static.rust-lang.org/dist/rust-${_version}-x86_64-unknown-linux-gnu.tar.xz > rust-${_version}-x86_64-unknown-linux-gnu.tar.xz
+
+        echo "Unpacking rust-${_version}-x86_64-unknown-linux-gnu.tar.xz"
+        tar -xf ./rust-${_version}-x86_64-unknown-linux-gnu.tar.xz
+
+        echo "Installing"
+        ./rust-${_version}-x86_64-unknown-linux-gnu/install.sh
+
+        echo "Cleaning up after install"
+        rm -rf ./rust-${_version}-x86_64-unknown-linux-gnu.tar.xz ./rust-${_version}-x86_64-unknown-linux-gnu
+
+    - name: Install cargo-pgrx
+      run: |
+        set -e
+        adduser -G wheel rust
+
+        mkdir -p ./.cargo_home
+
+        # Fix permission problems caused by the cache action.
+        chmod -R 777 ./.cargo_home
+
+        export CARGO_HOME=$(pwd)/.cargo_home
+        sudo --preserve-env=PATH,CARGO_HOME -u rust /usr/local/bin/cargo install --locked cargo-pgrx
+
+    - name: Test
+      run: |
+        set -e
+        export CARGO_HOME=$(pwd)/.cargo_home
+        sudo --preserve-env=PATH,CARGO_HOME -u rust /usr/local/bin/cargo pgrx init --pg17 /usr/pgsql-17/bin/pg_config
+
+        mkdir ./target
+        chmod -R 777 ./target
+        chmod a+rwx $(/usr/pgsql-17/bin/pg_config --pkglibdir) $(/usr/pgsql-17/bin/pg_config --sharedir)/extension /var/run/postgresql/
+        chmod -R 777 ./tests
+
+        export CARGO_HOME=$(pwd)/.cargo_home
+        sudo --preserve-env=PATH,CARGO_HOME -u rust /usr/local/bin/cargo pgrx regress --features pg17
