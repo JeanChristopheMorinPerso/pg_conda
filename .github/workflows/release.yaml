@@ -1,0 +1,153 @@
+# https://github.com/paradedb/paradedb/blob/dev/.github%2Fworkflows%2Fpublish-pg_search-rhel.yml
+
+name: Release
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    container: rockylinux/rockylinux:8
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          arch: x86_64
+          postgresql-version: 17
+        - os: ubuntu-24.04-arm
+          arch: aarch64
+          postgresql-version: 17
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install PostgreSQL
+      run: |
+        set -e
+        # Install the repository RPM:
+        dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-${POSTGRESQL_ARCH}/pgdg-redhat-repo-latest.noarch.rpm
+
+        # Disable the built-in PostgreSQL module:
+        dnf -qy module disable postgresql
+
+        # Install development dependencies
+        dnf install -y bison readline-devel zlib-devel openssl-devel
+
+        # Needed for pelr-IPC-RUN
+        dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --set-enabled powertools
+
+        # Install PostgreSQL:
+        dnf install -y postgresql${POSTGRESQL_VERSION}-server postgresql${POSTGRESQL_VERSION}-devel
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+        POSTGRESQL_ARCH: ${{ matrix.arch }}
+
+    - name: Install dependencies
+      run: dnf install -y clang git curl xz tar
+
+    - name: Install rust
+      run: |
+        set -e
+        _version='1.87.0'
+        echo "Downloading rust ${_version}"
+        curl -s https://static.rust-lang.org/dist/rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz > rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz
+
+        echo "Unpacking rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz"
+        tar -xf ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz
+
+        echo "Installing"
+        ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu/install.sh
+
+        echo "Cleaning up after install"
+        rm -rf ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu
+      env:
+        RUST_ARCH: ${{ matrix.arch }}
+
+    - name: Install cargo-pgrx
+      run: cargo install --locked cargo-pgrx
+
+    - name: Build
+      id: build
+      run: |
+        set -e
+        cargo pgrx init --pg${POSTGRESQL_VERSION} /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
+
+        cargo pgrx package --features pg17 --pg-config /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: raw-${{ matrix.arch }}-pg${{ matrix.postgresql-version }}
+        path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
+
+  package:
+    runs-on: ${{ matrix.os }}
+    needs: [build]
+
+    container: rockylinux/rockylinux:8
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          arch: x86_64
+          postgresql-version: 17
+        - os: ubuntu-24.04-arm
+          arch: aarch64
+          postgresql-version: 17
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: raw-${{ matrix.arch }}-pg${{ matrix.postgresql-version }}
+        path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
+
+    - name: Install dependencies
+      run: dnf install -y rpm-build tar
+
+    # - name: Package (generic)
+    #   id: package-generic
+    #   run: |
+    #     set -e
+
+    #     name=$(rpmspec ./pg_conda.spec -q --queryformat '%{name}')
+    #     version=$(rpmspec ./pg_conda.spec -q --queryformat '%{version}')
+
+    #     cp LICENSE ${name}-${version}/
+
+    #     tar -cvzf ${name}-${version}.tar.gz ${name}-${version}
+
+    #     echo "path=${name}-${version}.tar.gz" >> "$GITHUB_OUTPUT"
+
+    # - name: Upload package (generic)
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: generic-${{ matrix.arch }}-${{ matrix.postgresql-version }}
+    #     path: ${{ steps.package-generic.outputs.path }}
+
+    - name: Package (rpm)
+      run: |
+        set -e
+
+        rpmdev-setuptree
+
+        echo "Copying pg_conda binaries to RPM build directory..."
+        cp -v -r target/release/pg_conda-pg${POSTGRESQL_VERSION}/ ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}
+        cp -v LICENSE ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}/
+
+        cp -v pg_conda.spec ~/rpmbuild/SPECS/
+
+        echo "Building RPM package..."
+        rpmbuild --without debuginfo -ba ~/rpmbuild/SPECS/pg_conda.spec
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
