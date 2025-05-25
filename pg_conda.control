@@ -1,0 +1,6 @@
+comment = 'pg_conda:  Created by pgrx'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/pg_conda'
+relocatable = false
+superuser = false
+trusted = false

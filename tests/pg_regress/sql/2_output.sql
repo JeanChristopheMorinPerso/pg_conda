@@ -1,7 +1,7 @@
 -- Test the output function
 BEGIN;
 
-CREATE EXTENSION conda;
+CREATE EXTENSION pg_conda;
 
 SELECT '1.2.3'::condaversion::text;
 

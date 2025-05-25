@@ -212,15 +212,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "conda"
-version = "1.0.0"
-dependencies = [
- "pgrx",
- "rattler_conda_types",
- "serde",
-]
-
-[[package]]
 name = "convert_case"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1016,6 +1007,15 @@ dependencies = [
  "fixedbitset",
  "hashbrown 0.15.3",
  "indexmap 2.9.0",
+ "serde",
+]
+
+[[package]]
+name = "pg_conda"
+version = "1.0.0"
+dependencies = [
+ "pgrx",
+ "rattler_conda_types",
  "serde",
 ]
 

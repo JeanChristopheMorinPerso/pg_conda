@@ -1,7 +1,7 @@
 -- Test the hash function
 BEGIN;
 
-CREATE EXTENSION conda;
+CREATE EXTENSION pg_conda;
 
 SELECT DISTINCT v FROM (VALUES 
     ('1.1.0'::condaversion),
