@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE EXTENSION conda;
+CREATE EXTENSION pg_conda;
 
 CREATE TABLE versions (
     version condaversion

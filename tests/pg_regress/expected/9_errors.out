@@ -1,5 +1,5 @@
 BEGIN;
-CREATE EXTENSION conda;
+CREATE EXTENSION pg_conda;
 SELECT 'asd }{}'::condaversion;
 ERROR:  failed to parse version "asd }{}". It is probably not a valid conda version. Error: malformed version string 'asd }{}': encountered more characters but expected none at character 8
 ROLLBACK;

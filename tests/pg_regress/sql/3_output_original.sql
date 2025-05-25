@@ -3,7 +3,7 @@
 -- Our extension makes sure that this is not the case.
 BEGIN;
 
-CREATE EXTENSION conda;
+CREATE EXTENSION pg_conda;
 
 SELECT '1.01'::condaversion::text;
 

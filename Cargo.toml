@@ -1,5 +1,5 @@
 [package]
-name = "conda"
+name = "pg_conda"
 version = "1.0.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "lib"]
 
 [[bin]]
-name = "pgrx_embed_conda"
+name = "pgrx_embed_pg_conda"
 path = "./src/bin/pgrx_embed.rs"
 
 [features]
