@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo.svg" alt="pg_conda logo" width="200"/>
+</div>
+
 `pg_conda` is a PostgreSQL extension that adds types and functions for the conda ecosystem to your PostgreSQL database.
 
 Powered by [rattler](https://github.com/conda/rattler) and [pgrx](https://github.com/pgcentralfoundation/pgrx).
