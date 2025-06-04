@@ -1,0 +1,21 @@
+BEGIN;
+CREATE EXTENSION pg_conda;
+SELECT conda_minor('1.2');
+ conda_minor 
+-------------
+           2
+(1 row)
+
+SELECT conda_minor('1');
+ conda_minor 
+-------------
+            
+(1 row)
+
+SELECT conda_minor('1.2a.3'::condaversion);
+ conda_minor 
+-------------
+            
+(1 row)
+
+ROLLBACK;

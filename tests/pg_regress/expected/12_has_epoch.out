@@ -1,0 +1,27 @@
+BEGIN;
+CREATE EXTENSION pg_conda;
+SELECT conda_has_epoch('1.0.0') = FALSE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_has_epoch('1.0.0'::condaversion) = FALSE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_has_epoch('2!1.0.0') = TRUE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_has_epoch('2!1.0.0'::condaversion) = TRUE;
+ ?column? 
+----------
+ t
+(1 row)
+
+ROLLBACK;

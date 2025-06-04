@@ -1,0 +1,21 @@
+BEGIN;
+CREATE EXTENSION pg_conda;
+SELECT conda_major('1.2.3');
+ conda_major 
+-------------
+           1
+(1 row)
+
+SELECT conda_major('a');
+ conda_major 
+-------------
+           0
+(1 row)
+
+SELECT conda_major('1a.2.3');
+ conda_major 
+-------------
+            
+(1 row)
+
+ROLLBACK;

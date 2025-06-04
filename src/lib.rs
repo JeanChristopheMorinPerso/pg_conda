@@ -147,7 +147,7 @@ impl pgrx::InOutFuncs for CondaVersion {
 
 // https://github.com/theory/pg-semver/blob/main/sql/semver.sql#L246-L255
 #[pgrx::pg_extern]
-fn conda_smaller(a: CondaVersion, b: CondaVersion) -> CondaVersion {
+fn _conda_smaller(a: CondaVersion, b: CondaVersion) -> CondaVersion {
     if a <= b {
         return a;
     }
@@ -155,7 +155,7 @@ fn conda_smaller(a: CondaVersion, b: CondaVersion) -> CondaVersion {
 }
 
 #[pgrx::pg_extern]
-fn conda_larger(a: CondaVersion, b: CondaVersion) -> CondaVersion {
+fn _conda_larger(a: CondaVersion, b: CondaVersion) -> CondaVersion {
     if a >= b {
         return a;
     }
@@ -165,13 +165,13 @@ fn conda_larger(a: CondaVersion, b: CondaVersion) -> CondaVersion {
 pgrx::extension_sql!(
     r#"
 CREATE OR REPLACE AGGREGATE min(CondaVersion) (
-    SFUNC = conda_smaller,
+    SFUNC = _conda_smaller,
     STYPE = CondaVersion,
     SORTOP = <
 );
 "#,
     name = "min_aggregate",
-    requires = [CondaVersion, conda_smaller],
+    requires = [CondaVersion, _conda_smaller],
     // Insert at the end because we need the operator to be already defined.
     finalize,
 );
@@ -179,7 +179,7 @@ CREATE OR REPLACE AGGREGATE min(CondaVersion) (
 pgrx::extension_sql!(
     r#"
 CREATE OR REPLACE AGGREGATE max(CondaVersion) (
-    SFUNC = conda_larger,
+    SFUNC = _conda_larger,
     STYPE = CondaVersion,
     SORTOP = >
 );
@@ -187,5 +187,76 @@ CREATE OR REPLACE AGGREGATE max(CondaVersion) (
     name = "max_aggregate",
     // Insert at the end because we need the operator to be already defined.
     // Note how we insert after min_aggregate. That's because we can't have two "finalize".
-    requires = [CondaVersion, conda_larger, "min_aggregate"],
+    requires = [CondaVersion, _conda_larger, "min_aggregate"],
 );
+
+#[pgrx::pg_extern]
+fn conda_is_dev(version: CondaVersion) -> bool {
+    return version.version.is_dev();
+}
+
+#[pgrx::pg_extern]
+fn conda_is_post(version: CondaVersion) -> bool {
+    return version
+        .segments()
+        .flat_map(|segment| segment.components())
+        .any(rattler_conda_types::Component::is_post);
+}
+
+#[pgrx::pg_extern]
+fn conda_has_epoch(version: CondaVersion) -> bool {
+    return version.version.has_epoch();
+}
+
+#[pgrx::pg_extern]
+fn conda_has_local(version: CondaVersion) -> bool {
+    return version.version.has_local();
+}
+
+#[pgrx::pg_extern]
+fn conda_segments(version: CondaVersion) -> Vec<String> {
+    return version
+        .version
+        .segments()
+        .map(|segment| {
+            segment
+                .components()
+                .map(|component| component.to_string())
+                .collect::<Vec<String>>()
+        })
+        .flatten()
+        .collect();
+}
+
+#[pgrx::pg_extern]
+fn conda_major(version: CondaVersion) -> Option<i64> {
+    let mut segments = version.version.segments();
+    let segment = segments.next()?;
+
+    if segment.component_count() == 1 {
+        return Some(
+            segment
+                .components()
+                .next()
+                .and_then(rattler_conda_types::Component::as_number)? as i64,
+        );
+    }
+    return None;
+}
+
+#[pgrx::pg_extern]
+fn conda_minor(version: CondaVersion) -> Option<i64> {
+    let mut segments = version.version.segments();
+    let major = segments.next()?;
+    let minor = segments.next()?;
+
+    if major.component_count() == 1 && minor.component_count() == 1 {
+        return Some(
+            minor
+                .components()
+                .next()
+                .and_then(rattler_conda_types::Component::as_number)? as i64,
+        );
+    }
+    return None;
+}

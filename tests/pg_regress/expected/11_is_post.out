@@ -1,0 +1,33 @@
+BEGIN;
+CREATE EXTENSION pg_conda;
+SELECT conda_is_post('1.0.0') = FALSE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_is_post('1.0.0'::condaversion) = FALSE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_is_post('1.0.0.dev1') = FALSE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_is_post('1.0.0.post1') = TRUE;
+ ?column? 
+----------
+ t
+(1 row)
+
+SELECT conda_is_post('1.0.0.post1'::condaversion) = TRUE;
+ ?column? 
+----------
+ t
+(1 row)
+
+ROLLBACK;
