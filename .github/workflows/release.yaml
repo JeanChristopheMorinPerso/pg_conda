@@ -5,11 +5,16 @@ name: Release
 on:
   push:
 
+permissions: {}
+
 jobs:
   build:
     name: build (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     container: rockylinux/rockylinux:${{ matrix.rhel-version }}
+
+    permissions:
+      contents: read
 
     strategy:
       fail-fast: false
@@ -97,6 +102,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: rockylinux/rockylinux:${{ matrix.rhel-version }}
 
+    permissions:
+      contents: read
+
     strategy:
       fail-fast: false
       matrix:
@@ -154,7 +162,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
-        path: pg_conda-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
+        path: pg_conda_${{ matrix.postgresql-version }}-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
         if-no-files-found: error
 
   release:
