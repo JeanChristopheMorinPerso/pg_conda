@@ -7,8 +7,9 @@ on:
 
 jobs:
   build:
+    name: build (pg${{ matrix.postgresql-version }}, rockylinux-${{ matrix.rockylinux-version}}/${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    container: rockylinux/rockylinux:8
+    container: rockylinux/rockylinux:${{ matrix.rockylinux-version }}
 
     strategy:
       fail-fast: false
@@ -17,9 +18,11 @@ jobs:
         - os: ubuntu-latest
           arch: x86_64
           postgresql-version: 17
+          rockylinux-version: 8
         - os: ubuntu-24.04-arm
           arch: aarch64
           postgresql-version: 17
+          rockylinux-version: 8
 
     steps:
     - uses: actions/checkout@v4
@@ -87,10 +90,11 @@ jobs:
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
   package:
+    name: package (pg${{ matrix.postgresql-version }}, rockylinux-${{ matrix.rockylinux-version}}/${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     needs: [build]
 
-    container: rockylinux/rockylinux:8
+    container: rockylinux/rockylinux:${{ matrix.rockylinux-version }}
 
     strategy:
       fail-fast: false
@@ -99,9 +103,11 @@ jobs:
         - os: ubuntu-latest
           arch: x86_64
           postgresql-version: 17
+          rockylinux-version: 8
         - os: ubuntu-24.04-arm
           arch: aarch64
           postgresql-version: 17
+          rockylinux-version: 8
 
     steps:
     - uses: actions/checkout@v4
@@ -113,7 +119,7 @@ jobs:
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
     - name: Install dependencies
-      run: dnf install -y rpm-build tar
+      run: dnf install -y rpm-build rpmdevtools tar
 
     # - name: Package (generic)
     #   id: package-generic
@@ -142,10 +148,10 @@ jobs:
         rpmdev-setuptree
 
         echo "Copying pg_conda binaries to RPM build directory..."
-        cp -v -r target/release/pg_conda-pg${POSTGRESQL_VERSION}/ ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}
-        cp -v LICENSE ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}/
+        cp -v -r ./target/release/pg_conda-pg${POSTGRESQL_VERSION}/ ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}
+        cp -v ./LICENSE ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}/
 
-        cp -v pg_conda.spec ~/rpmbuild/SPECS/
+        cp -v ./pg_conda.spec ~/rpmbuild/SPECS/
 
         echo "Building RPM package..."
         rpmbuild --without debuginfo -ba ~/rpmbuild/SPECS/pg_conda.spec
