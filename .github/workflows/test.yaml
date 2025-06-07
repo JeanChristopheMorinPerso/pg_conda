@@ -75,7 +75,7 @@ jobs:
         export CARGO_HOME=$(pwd)/.cargo_home
         sudo --preserve-env=PATH,CARGO_HOME -u rust /usr/local/bin/cargo pgrx init --pg17 /usr/pgsql-17/bin/pg_config
 
-        mkdir ./target
+        mkdir -p ./target
         chmod -R 777 ./target
         chmod a+rwx $(/usr/pgsql-17/bin/pg_config --pkglibdir) $(/usr/pgsql-17/bin/pg_config --sharedir)/extension /var/run/postgresql/
         chmod -R 777 ./tests
