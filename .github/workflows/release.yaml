@@ -61,18 +61,24 @@ jobs:
         # Install development dependencies
         dnf install -y bison readline-devel zlib-devel openssl-devel
 
-        # Needed for pelr-IPC-RUN
+        # Needed for perl-IPC-RUN
         dnf install -y 'dnf-command(config-manager)'
-        dnf config-manager --set-enabled powertools
+
+        if [ "${OS_NAME}" = "rhel-8" ]; then
+            dnf config-manager --set-enabled powertools
+        else
+            dnf config-manager --enable crb
+        fi
 
         # Install PostgreSQL:
         dnf install -y postgresql${POSTGRESQL_VERSION}-server postgresql${POSTGRESQL_VERSION}-devel
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
         POSTGRESQL_ARCH: ${{ matrix.os.arch }}
+        OS_NAME: ${{ matrix.os.name }}
 
     - name: Install dependencies
-      run: dnf install -y clang git curl xz tar
+      run: dnf install -y --allowerasing clang git curl xz tar
 
     - name: Install rust
       run: |
