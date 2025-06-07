@@ -7,9 +7,9 @@ on:
 
 jobs:
   build:
-    name: build (pg${{ matrix.postgresql-version }}, rockylinux-${{ matrix.rockylinux-version}}/${{ matrix.arch }})
+    name: build (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
-    container: rockylinux/rockylinux:${{ matrix.rockylinux-version }}
+    container: rockylinux/rockylinux:${{ matrix.rhel-version }}
 
     strategy:
       fail-fast: false
@@ -18,11 +18,11 @@ jobs:
         - os: ubuntu-latest
           arch: x86_64
           postgresql-version: 17
-          rockylinux-version: 8
+          rhel-version: 8
         - os: ubuntu-24.04-arm
           arch: aarch64
           postgresql-version: 17
-          rockylinux-version: 8
+          rhel-version: 8
 
     steps:
     - uses: actions/checkout@v4
@@ -90,11 +90,11 @@ jobs:
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
   package:
-    name: package (pg${{ matrix.postgresql-version }}, rockylinux-${{ matrix.rockylinux-version}}/${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
+    name: build (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
     needs: [build]
 
-    container: rockylinux/rockylinux:${{ matrix.rockylinux-version }}
+    runs-on: ${{ matrix.os }}
+    container: rockylinux/rockylinux:${{ matrix.rhel-version }}
 
     strategy:
       fail-fast: false
@@ -103,11 +103,11 @@ jobs:
         - os: ubuntu-latest
           arch: x86_64
           postgresql-version: 17
-          rockylinux-version: 8
+          rhel-version: 8
         - os: ubuntu-24.04-arm
           arch: aarch64
           postgresql-version: 17
-          rockylinux-version: 8
+          rhel-version: 8
 
     steps:
     - uses: actions/checkout@v4

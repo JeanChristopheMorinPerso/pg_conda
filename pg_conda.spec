@@ -7,7 +7,6 @@ Summary: PostgreSQL extension that adds types and functions for the conda ecosys
 License: MIT
 URL: https://github.com/JeanChristopheMorinPerso/pg_conda
 
-BuildRequires:  postgresql%{pg_version}-devel
 Requires:       postgresql%{pg_version}-server
 
 %description
