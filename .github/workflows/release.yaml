@@ -86,11 +86,11 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: raw-${{ matrix.arch }}-pg${{ matrix.postgresql-version }}
+        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
   package:
-    name: build (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
+    name: package (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
     needs: [build]
 
     runs-on: ${{ matrix.os }}
@@ -115,31 +115,18 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: raw-${{ matrix.arch }}-pg${{ matrix.postgresql-version }}
+        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
     - name: Install dependencies
       run: dnf install -y rpm-build rpmdevtools tar
 
-    # - name: Package (generic)
-    #   id: package-generic
-    #   run: |
-    #     set -e
-
-    #     name=$(rpmspec ./pg_conda.spec -q --queryformat '%{name}')
-    #     version=$(rpmspec ./pg_conda.spec -q --queryformat '%{version}')
-
-    #     cp LICENSE ${name}-${version}/
-
-    #     tar -cvzf ${name}-${version}.tar.gz ${name}-${version}
-
-    #     echo "path=${name}-${version}.tar.gz" >> "$GITHUB_OUTPUT"
-
-    # - name: Upload package (generic)
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: generic-${{ matrix.arch }}-${{ matrix.postgresql-version }}
-    #     path: ${{ steps.package-generic.outputs.path }}
+    - name: Get version from tag
+      id: version
+      run: |
+        set -e
+        # echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        echo "tag=1.0.0" >> $GITHUB_OUTPUT
 
     - name: Package (rpm)
       run: |
@@ -154,6 +141,44 @@ jobs:
         cp -v ./pg_conda.spec ~/rpmbuild/SPECS/
 
         echo "Building RPM package..."
-        rpmbuild --without debuginfo -ba ~/rpmbuild/SPECS/pg_conda.spec
+        rpmbuild --without debuginfo --define "_version ${CURRENT_VERSION}" --define "_pg_version ${POSTGRESQL_VERSION}" -ba ~/rpmbuild/SPECS/pg_conda.spec
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+        CURRENT_VERSION: ${{ steps.version.outputs.tag }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
+        path: rpmbuild/RPMS/${{ matrix.arch }}/pg_conda-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
+
+  release:
+    name: release (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
+    needs: [package]
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: ubuntu-latest
+          arch: x86_64
+          postgresql-version: 17
+          rhel-version: 8
+        - os: ubuntu-24.04-arm
+          arch: aarch64
+          postgresql-version: 17
+          rhel-version: 8
+
+    permissions:
+      attestations: write
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
+
+    - name: List
+      run: |
+        set -e
+        ls -la
