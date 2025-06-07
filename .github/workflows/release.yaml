@@ -88,6 +88,7 @@ jobs:
       with:
         name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
+        if-no-files-found: error
 
   package:
     name: package (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
@@ -142,6 +143,7 @@ jobs:
 
         echo "Building RPM package..."
         rpmbuild --without debuginfo --define "_version ${CURRENT_VERSION}" --define "_pg_version ${POSTGRESQL_VERSION}" -ba ~/rpmbuild/SPECS/pg_conda.spec
+        cp -v ~/rpmbuild/RPMS/${{ matrix.arch }}/pg_conda-${CURRENT_VERSION}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm ./
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
         CURRENT_VERSION: ${{ steps.version.outputs.tag }}
@@ -150,7 +152,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
-        path: rpmbuild/RPMS/${{ matrix.arch }}/pg_conda-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
+        path: pg_conda-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
+        if-no-files-found: error
 
   release:
     name: release (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
