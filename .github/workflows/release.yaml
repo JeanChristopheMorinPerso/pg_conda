@@ -9,9 +9,9 @@ permissions: {}
 
 jobs:
   build:
-    name: build (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
-    runs-on: ${{ matrix.os }}
-    container: rockylinux/rockylinux:${{ matrix.rhel-version }}
+    name: build (pg-${{ matrix.postgresql-version }}, ${{ matrix.os.name }}, ${{ matrix.os.arch }})
+    runs-on: ${{ matrix.os.runner }}
+    container: ${{ matrix.os.docker-image }}
 
     permissions:
       contents: read
@@ -19,15 +19,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - os: ubuntu-latest
-          arch: x86_64
-          postgresql-version: 17
-          rhel-version: 8
-        - os: ubuntu-24.04-arm
-          arch: aarch64
-          postgresql-version: 17
-          rhel-version: 8
+        os:
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            arch: x86_64
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            arch: x86_64
+          # - runner: ubuntu-latest
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   arch: x86_64
+          - runner: ubuntu-latest-arm
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            arch: aarch64
+          - runner: ubuntu-latest-arm
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            arch: aarch64
+          # - runner: ubuntu-latest-arm
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   arch: aarch64
+        postgresql-version: ['15', '16', '17']
 
     steps:
     - uses: actions/checkout@v4
@@ -52,7 +69,7 @@ jobs:
         dnf install -y postgresql${POSTGRESQL_VERSION}-server postgresql${POSTGRESQL_VERSION}-devel
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
-        POSTGRESQL_ARCH: ${{ matrix.arch }}
+        POSTGRESQL_ARCH: ${{ matrix.os.arch }}
 
     - name: Install dependencies
       run: dnf install -y clang git curl xz tar
@@ -73,7 +90,7 @@ jobs:
         echo "Cleaning up after install"
         rm -rf ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu
       env:
-        RUST_ARCH: ${{ matrix.arch }}
+        RUST_ARCH: ${{ matrix.os.arch }}
 
     - name: Install cargo-pgrx
       run: cargo install --locked cargo-pgrx
@@ -91,16 +108,16 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
+        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
         if-no-files-found: error
 
   package:
-    name: package (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.rhel-version }}, ${{ matrix.arch }})
+    name: package (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.os.rhel-version }}, ${{ matrix.os.arch }})
     needs: [build]
 
-    runs-on: ${{ matrix.os }}
-    container: rockylinux/rockylinux:${{ matrix.rhel-version }}
+    runs-on: ${{ matrix.os.runner }}
+    container: ${{ matrix.os.docker-image }}
 
     permissions:
       contents: read
@@ -108,15 +125,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - os: ubuntu-latest
-          arch: x86_64
-          postgresql-version: 17
-          rhel-version: 8
-        - os: ubuntu-24.04-arm
-          arch: aarch64
-          postgresql-version: 17
-          rhel-version: 8
+        os:
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            arch: x86_64
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            arch: x86_64
+          # - runner: ubuntu-latest
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   arch: x86_64
+          - runner: ubuntu-latest-arm
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            arch: aarch64
+          - runner: ubuntu-latest-arm
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            arch: aarch64
+          # - runner: ubuntu-latest-arm
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   arch: aarch64
+        postgresql-version: ['15', '16', '17']
 
     steps:
     - uses: actions/checkout@v4
@@ -124,7 +158,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
+        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
     - name: Install dependencies
@@ -155,14 +189,14 @@ jobs:
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
         CURRENT_VERSION: ${{ steps.version.outputs.tag }}
-        RPM_ARCH: ${{ matrix.arch }}
-        RHEL_VERSION: ${{ matrix.rhel-version }}
+        RPM_ARCH: ${{ matrix.os.arch }}
+        RHEL_VERSION: ${{ matrix.os.rhel-version }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.rhel-version }}-${{ matrix.arch }}
-        path: pg_conda_${{ matrix.postgresql-version }}-${{ steps.version.outputs.tag }}-1.el${{ matrix.rhel-version}}.${{ matrix.arch }}.rpm
+        name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
+        path: pg_conda_${{ matrix.postgresql-version }}-${{ steps.version.outputs.tag }}-1.el${{ matrix.os.rhel-version}}.${{ matrix.os.arch }}.rpm
         if-no-files-found: error
 
   release:
@@ -173,11 +207,13 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         pattern: rpm-*
+        path: rpms
+        merge-multiple: true
 
     - name: List
       run: |
         set -e
-        ls -la
+        ls -la rpms
 
     # - name: Sign rpm
     #   uses: sigstore/gh-action-sigstore-python@f514d46b907ebcd5bedc05145c03b69c1edd8b46  # v3.0.0
