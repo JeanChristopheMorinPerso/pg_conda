@@ -6,6 +6,12 @@
 
 Powered by [rattler](https://github.com/conda/rattler) and [pgrx](https://github.com/pgcentralfoundation/pgrx).
 
+# Installation
+
+RPMs are available on the GitHub Releases page at https://github.com/JeanChristopheMorinPerso/pg_conda/releases/latest.
+
+If you want to install for another OS or Linux distro, you can build from source or you can open an issue to request a build.
+
 # Types
 
 ## condaversion
