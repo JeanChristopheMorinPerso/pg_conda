@@ -107,7 +107,7 @@ jobs:
         set -e
         cargo pgrx init --pg${POSTGRESQL_VERSION} /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
 
-        cargo pgrx package --features pg17 --pg-config /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
+        cargo pgrx package --features pg${POSTGRESQL_VERSION} --no-default-features --pg-config /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
 
