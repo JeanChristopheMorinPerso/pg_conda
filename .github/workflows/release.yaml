@@ -1,0 +1,233 @@
+# https://github.com/paradedb/paradedb/blob/dev/.github%2Fworkflows%2Fpublish-pg_search-rhel.yml
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  build:
+    name: build (pg-${{ matrix.postgresql-version }}, ${{ matrix.os.name }}, ${{ matrix.os.arch }})
+    runs-on: ${{ matrix.os.runner }}
+    container: ${{ matrix.os.docker-image }}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            version: 8
+            arch: x86_64
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            version: 9
+            arch: x86_64
+          # - runner: ubuntu-latest
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   version: 10
+          #   arch: x86_64
+          - runner: ubuntu-24.04-arm
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            version: 8
+            arch: aarch64
+          - runner: ubuntu-24.04-arm
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            version: 9
+            arch: aarch64
+          # - runner: ubuntu-24.04-arm
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   version: 10
+          #   arch: aarch64
+        postgresql-version: ['15', '16', '17']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install PostgreSQL
+      run: |
+        set -e
+        # Install the repository RPM:
+        dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-${POSTGRESQL_ARCH}/pgdg-redhat-repo-latest.noarch.rpm
+
+        # Disable the built-in PostgreSQL module:
+        dnf -qy module disable postgresql
+
+        # Install development dependencies
+        dnf install -y bison readline-devel zlib-devel openssl-devel
+
+        # Needed for perl-IPC-RUN
+        dnf install -y 'dnf-command(config-manager)'
+
+        if [ "${OS_NAME}" = "rhel-8" ]; then
+            dnf config-manager --set-enabled powertools
+        else
+            dnf config-manager --enable crb
+        fi
+
+        # Install PostgreSQL:
+        dnf install -y postgresql${POSTGRESQL_VERSION}-server postgresql${POSTGRESQL_VERSION}-devel
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+        POSTGRESQL_ARCH: ${{ matrix.os.arch }}
+        OS_NAME: ${{ matrix.os.name }}
+
+    - name: Install dependencies
+      run: dnf install -y --allowerasing clang git curl xz tar
+
+    - name: Install rust
+      run: |
+        set -e
+        _version='1.87.0'
+        echo "Downloading rust ${_version}"
+        curl -s https://static.rust-lang.org/dist/rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz > rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz
+
+        echo "Unpacking rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz"
+        tar -xf ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz
+
+        echo "Installing"
+        ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu/install.sh
+
+        echo "Cleaning up after install"
+        rm -rf ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu.tar.xz ./rust-${_version}-${RUST_ARCH}-unknown-linux-gnu
+      env:
+        RUST_ARCH: ${{ matrix.os.arch }}
+
+    - name: Install cargo-pgrx
+      run: cargo install --locked cargo-pgrx
+
+    - name: Build
+      id: build
+      run: |
+        set -e
+        cargo pgrx init --pg${POSTGRESQL_VERSION} /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
+
+        cargo pgrx package --features pg${POSTGRESQL_VERSION} --no-default-features --pg-config /usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: raw-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
+        path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
+        if-no-files-found: error
+
+  package:
+    name: package (pg-${{ matrix.postgresql-version }}, ${{ matrix.os.name }}, ${{ matrix.os.arch }})
+    needs: [build]
+
+    runs-on: ${{ matrix.os.runner }}
+    container: ${{ matrix.os.docker-image }}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            version: 8
+            arch: x86_64
+          - runner: ubuntu-latest
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            version: 9
+            arch: x86_64
+          # - runner: ubuntu-latest
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   version: 10
+          #   arch: x86_64
+          - runner: ubuntu-24.04-arm
+            docker-image: rockylinux/rockylinux:8
+            name: rhel-8
+            version: 8
+            arch: aarch64
+          - runner: ubuntu-24.04-arm
+            docker-image: rockylinux/rockylinux:9
+            name: rhel-9
+            version: 9
+            arch: aarch64
+          # - runner: ubuntu-24.04-arm
+          #   docker-image: rockylinux/rockylinux:10
+          #   name: rhel-10
+          #   version: 10
+          #   arch: aarch64
+        postgresql-version: ['15', '16', '17']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: raw-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
+        path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
+
+    - name: Install dependencies
+      run: dnf install -y rpm-build rpmdevtools tar
+
+    - name: Package (rpm)
+      run: |
+        set -e
+
+        rpmdev-setuptree
+
+        echo "Copying pg_conda binaries to RPM build directory..."
+        cp -v -r ./target/release/pg_conda-pg${POSTGRESQL_VERSION}/ ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}
+        cp -v ./LICENSE ~/rpmbuild/SOURCES/pg_conda_${POSTGRESQL_VERSION}/
+
+        cp -v ./pg_conda.spec ~/rpmbuild/SPECS/
+
+        echo "Building RPM package..."
+        rpmbuild --without debuginfo --define "_version ${CURRENT_VERSION}" --define "_pg_version ${POSTGRESQL_VERSION}" -ba ~/rpmbuild/SPECS/pg_conda.spec
+        cp -v ~/rpmbuild/RPMS/${RPM_ARCH}/pg_conda_${POSTGRESQL_VERSION}-${CURRENT_VERSION}-1.el${OS_VERSION}.${RPM_ARCH}.rpm ./
+      env:
+        POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
+        CURRENT_VERSION: ${{ github.event.release.tag_name }}
+        RPM_ARCH: ${{ matrix.os.arch }}
+        OS_VERSION: ${{ matrix.os.version }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rpm-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
+        path: pg_conda_${{ matrix.postgresql-version }}-${{ github.event.release.tag_name }}-1.el${{ matrix.os.version}}.${{ matrix.os.arch }}.rpm
+        if-no-files-found: error
+
+  release:
+    needs: [package]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: rpm-*
+        path: rpms
+        merge-multiple: true
+
+    - name: Sign and upload rpms
+      uses: sigstore/gh-action-sigstore-python@f514d46b907ebcd5bedc05145c03b69c1edd8b46  # v3.0.0
+      with:
+        inputs: ./rpms/*.rpm
+        release-signing-artifacts: true
