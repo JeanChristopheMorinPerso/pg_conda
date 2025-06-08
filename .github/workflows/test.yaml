@@ -2,6 +2,12 @@ name: Test
 
 on:
   push:
+    paths:
+    - 'src/**'
+    - 'Cargo.lock'
+    - 'Cargo.toml'
+    - 'tests/**'
+    - 'pg_conda.control'
 
 jobs:
   test:
