@@ -1250,9 +1250,9 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 
 [[package]]
 name = "rattler_conda_types"
-version = "0.34.0"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c956574a51e94f0c74e7b40bae9ab46ef516b889ed720ff65cb8b0e30c913187"
+checksum = "226444feee426db2cf803311597d43f22e964374eb7bad55602dda016264dc25"
 dependencies = [
  "chrono",
  "core-foundation",
