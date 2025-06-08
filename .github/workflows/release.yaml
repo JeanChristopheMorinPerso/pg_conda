@@ -23,26 +23,32 @@ jobs:
           - runner: ubuntu-latest
             docker-image: rockylinux/rockylinux:8
             name: rhel-8
+            version: 8
             arch: x86_64
           - runner: ubuntu-latest
             docker-image: rockylinux/rockylinux:9
             name: rhel-9
+            version: 9
             arch: x86_64
           # - runner: ubuntu-latest
           #   docker-image: rockylinux/rockylinux:10
           #   name: rhel-10
+          #   version: 10
           #   arch: x86_64
-          - runner: ubuntu-latest-arm
+          - runner: ubuntu-24.04-arm
             docker-image: rockylinux/rockylinux:8
             name: rhel-8
+            version: 8
             arch: aarch64
-          - runner: ubuntu-latest-arm
+          - runner: ubuntu-24.04-arm
             docker-image: rockylinux/rockylinux:9
             name: rhel-9
+            version: 9
             arch: aarch64
-          # - runner: ubuntu-latest-arm
+          # - runner: ubuntu-24.04-arm
           #   docker-image: rockylinux/rockylinux:10
           #   name: rhel-10
+          #   version: 10
           #   arch: aarch64
         postgresql-version: ['15', '16', '17']
 
@@ -114,12 +120,12 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
+        name: raw-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
         if-no-files-found: error
 
   package:
-    name: package (pg-${{ matrix.postgresql-version }}, rhel-${{ matrix.os.rhel-version }}, ${{ matrix.os.arch }})
+    name: package (pg-${{ matrix.postgresql-version }}, ${{ matrix.os.name }}, ${{ matrix.os.arch }})
     needs: [build]
 
     runs-on: ${{ matrix.os.runner }}
@@ -135,26 +141,32 @@ jobs:
           - runner: ubuntu-latest
             docker-image: rockylinux/rockylinux:8
             name: rhel-8
+            version: 8
             arch: x86_64
           - runner: ubuntu-latest
             docker-image: rockylinux/rockylinux:9
             name: rhel-9
+            version: 9
             arch: x86_64
           # - runner: ubuntu-latest
           #   docker-image: rockylinux/rockylinux:10
           #   name: rhel-10
+          #   version: 10
           #   arch: x86_64
-          - runner: ubuntu-latest-arm
+          - runner: ubuntu-24.04-arm
             docker-image: rockylinux/rockylinux:8
             name: rhel-8
+            version: 8
             arch: aarch64
-          - runner: ubuntu-latest-arm
+          - runner: ubuntu-24.04-arm
             docker-image: rockylinux/rockylinux:9
             name: rhel-9
+            version: 9
             arch: aarch64
-          # - runner: ubuntu-latest-arm
+          # - runner: ubuntu-24.04-arm
           #   docker-image: rockylinux/rockylinux:10
           #   name: rhel-10
+          #   version: 10
           #   arch: aarch64
         postgresql-version: ['15', '16', '17']
 
@@ -164,7 +176,7 @@ jobs:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: raw-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
+        name: raw-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
         path: target/release/pg_conda-pg${{ matrix.postgresql-version }}
 
     - name: Install dependencies
@@ -191,18 +203,18 @@ jobs:
 
         echo "Building RPM package..."
         rpmbuild --without debuginfo --define "_version ${CURRENT_VERSION}" --define "_pg_version ${POSTGRESQL_VERSION}" -ba ~/rpmbuild/SPECS/pg_conda.spec
-        cp -v ~/rpmbuild/RPMS/${RPM_ARCH}/pg_conda_${POSTGRESQL_VERSION}-${CURRENT_VERSION}-1.el${RHEL_VERSION}.${RPM_ARCH}.rpm ./
+        cp -v ~/rpmbuild/RPMS/${RPM_ARCH}/pg_conda_${POSTGRESQL_VERSION}-${CURRENT_VERSION}-1.el${OS_VERSION}.${RPM_ARCH}.rpm ./
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
         CURRENT_VERSION: ${{ steps.version.outputs.tag }}
         RPM_ARCH: ${{ matrix.os.arch }}
-        RHEL_VERSION: ${{ matrix.os.rhel-version }}
+        OS_VERSION: ${{ matrix.os.version }}
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: rpm-pg_${{ matrix.postgresql-version }}-rhel_${{ matrix.os.rhel-version }}-${{ matrix.os.arch }}
-        path: pg_conda_${{ matrix.postgresql-version }}-${{ steps.version.outputs.tag }}-1.el${{ matrix.os.rhel-version}}.${{ matrix.os.arch }}.rpm
+        name: rpm-pg_${{ matrix.postgresql-version }}-${{ matrix.os.name }}-${{ matrix.os.arch }}
+        path: pg_conda_${{ matrix.postgresql-version }}-${{ steps.version.outputs.tag }}-1.el${{ matrix.os.version}}.${{ matrix.os.arch }}.rpm
         if-no-files-found: error
 
   release:
