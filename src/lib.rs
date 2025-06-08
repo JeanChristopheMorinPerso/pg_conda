@@ -218,13 +218,12 @@ fn conda_segments(version: CondaVersion) -> Vec<String> {
     return version
         .version
         .segments()
-        .map(|segment| {
+        .flat_map(|segment| {
             segment
                 .components()
                 .map(|component| component.to_string())
                 .collect::<Vec<String>>()
         })
-        .flatten()
         .collect();
 }
 
