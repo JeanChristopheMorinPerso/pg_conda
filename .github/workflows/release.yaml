@@ -208,7 +208,7 @@ jobs:
         cp -v ~/rpmbuild/RPMS/${RPM_ARCH}/pg_conda_${POSTGRESQL_VERSION}-${CURRENT_VERSION}-1.el${OS_VERSION}.${RPM_ARCH}.rpm ./
       env:
         POSTGRESQL_VERSION: ${{ matrix.postgresql-version }}
-        CURRENT_VERSION: ${{ github.event.release.tag_name }}
+        CURRENT_VERSION: ${{ github.event.release.tag_name || '0.0.0' }}
         RPM_ARCH: ${{ matrix.os.arch }}
         OS_VERSION: ${{ matrix.os.version }}
 
