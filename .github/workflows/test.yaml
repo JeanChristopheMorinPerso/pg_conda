@@ -13,6 +13,7 @@ permissions: {}
 
 jobs:
   test:
+    name: test
     runs-on: ubuntu-latest
     container: rockylinux/rockylinux:8
 

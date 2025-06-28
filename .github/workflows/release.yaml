@@ -5,7 +5,7 @@ name: Release
 on:
   release:
     types: [published]
-  push:
+  #push:
 
 permissions: {}
 
@@ -220,6 +220,7 @@ jobs:
         if-no-files-found: error
 
   release:
+    name: release
     if: ${{ github.event_name == 'release' }}
     needs: [package]
     runs-on: ubuntu-latest
