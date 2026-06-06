@@ -57,7 +57,7 @@ jobs:
     - name: Install rust
       run: |
         set -e
-        _version='1.87.0'
+        _version='1.96.0'
         echo "Downloading rust ${_version}"
         curl -s https://static.rust-lang.org/dist/rust-${_version}-x86_64-unknown-linux-gnu.tar.xz > rust-${_version}-x86_64-unknown-linux-gnu.tar.xz
 
@@ -96,3 +96,4 @@ jobs:
 
         export CARGO_HOME=$(pwd)/.cargo_home
         sudo --preserve-env=PATH,CARGO_HOME -u rust /usr/local/bin/cargo pgrx regress --features pg17
+
