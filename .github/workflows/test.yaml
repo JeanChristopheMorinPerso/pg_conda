@@ -8,6 +8,7 @@ on:
     - 'Cargo.toml'
     - 'tests/**'
     - 'pg_conda.control'
+    - '.github/workflows/test.yaml'
 
 permissions: {}
 
