@@ -1,14 +1,11 @@
 [package]
 name = "pg_conda"
 version = "1.0.1"
-edition = "2021"
+edition = "2024"
+resolver = "3"
 
 [lib]
-crate-type = ["cdylib", "lib"]
-
-[[bin]]
-name = "pgrx_embed_pg_conda"
-path = "./src/bin/pgrx_embed.rs"
+crate-type = ["cdylib"]
 
 [features]
 default = ["pg17"]
@@ -20,7 +17,7 @@ pg17 = ["pgrx/pg17" ]
 no-schema-generation = ["pgrx/no-schema-generation"]
 
 [dependencies]
-pgrx = "0.14.3"
+pgrx = "0.18.1"
 rattler_conda_types = "0.35.3"
 serde = "1.0.219"
 
