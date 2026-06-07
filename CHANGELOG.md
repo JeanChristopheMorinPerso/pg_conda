@@ -1,3 +1,8 @@
+# 1.0.2
+
+* Bump pgrx to 0.18.1
+* Bump rattler_conda_tyles from 0.35.3 to 0.36.0
+
 # 1.0.1
 
 * Add support for RHEL 10.
